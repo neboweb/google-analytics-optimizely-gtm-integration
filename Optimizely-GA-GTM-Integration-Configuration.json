@@ -1,0 +1,343 @@
+{
+    "exportFormatVersion": 2,
+    "exportTime": "2018-08-09 18:52:36",
+    "containerVersion": {
+        "path": "accounts/302932/containers/2043556/versions/30",
+        "accountId": "302932",
+        "containerId": "2043556",
+        "containerVersionId": "30",
+        "name": "Integrates Optimizely with Google Analytics",
+        "description": "Adds tags and triggers necessary for Optimizely-Google Analytics Integration through Google Tag Manger as documented here:\nhttps://help.optimizely.com/Integrate_Other_Platforms/Integrate_Optimizely_X_with_Google_Universal_Analytics_using_Google_Tag_Manager",
+        "container": {
+            "path": "accounts/302932/containers/2043556",
+            "accountId": "302932",
+            "containerId": "2043556",
+            "name": "New Container Template",
+            "publicId": "GTM-MQHPZC",
+            "usageContext": [
+                "WEB"
+            ],
+            "fingerprint": "1533840400487",
+            "tagManagerUrl": "https://tagmanager.google.com/#/container/accounts/302932/containers/2043556/workspaces?apiLink=container"
+        },
+        "tag": [
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "tagId": "110",
+                "name": "Optimizely Campaign decided",
+                "type": "ua",
+                "parameter": [
+                    {
+                        "type": "BOOLEAN",
+                        "key": "nonInteraction",
+                        "value": "true"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "overrideGaSettings",
+                        "value": "true"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventCategory",
+                        "value": "Optimizely"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "trackType",
+                        "value": "TRACK_EVENT"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "gaSettings",
+                        "value": "{{Google Analytics Settings}}"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventAction",
+                        "value": "Assigned to Campaign"
+                    },
+                    {
+                        "type": "LIST",
+                        "key": "dimension",
+                        "list": [
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "index",
+                                        "value": "{{optimizely-dimension-number}}"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "dimension",
+                                        "value": "{{optimizely-dimension-value}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "fingerprint": "1533839785286",
+                "firingTriggerId": [
+                    "97"
+                ],
+                "tagFiringOption": "ONCE_PER_EVENT"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "tagId": "109",
+                "name": "Optimizely Integration Code",
+                "type": "html",
+                "parameter": [
+                    {
+                        "type": "TEMPLATE",
+                        "key": "html",
+                        "value": "<script>\nvar DATALAYER_OBJECT_NAME = 'dataLayer';\n\n/**\n * Some analytics platforms have the ability to fix referrer values by overriding the page referrer value.\n * this function is called when a redirect has occured on the previous page. \n *\n * @param {string} referrer - The effective referrer value\n */\nvar referrerOverride = function(referrer) {\n    var dataLayerObject = window[DATALAYER_OBJECT_NAME] || [];\n    dataLayerObject.push({\n      'event': 'optimizely-referrer-override', \n      'optimizely-referrer': referrer\n    }); \n};\n\n/**\n * Used for experiments created in 'new Optimizely'. This function is executed for all\n * experiments that are running on the page. Use the arguments to send data to your platform.\n *\n * @param {string} campaignName - The name of a campaign that is running on the page\n * @param {string} campaignId - The ID of a campaign that is running on the page\n * @param {string} audienceNames - The names of all the audience the visitor is considered part of related to this campaign\n * @param {string} audienceIds - The names of all the ids the visitor is considered part of related to this campaign\n * @param {string} variationName - The name of the experiment the user is seeing. Frequently, a name is only available for the campaign\n * @param {string} variationId - The ID if the experiment the user is seeing \n * @param {string} variationName - The name of the variation the user is seeing\n * @param {string} variationId - The ID if the variation the user is seeing \n * @param {boolean} inHoldback - If true, the visitor has not been exposed to this variation, but is kept in a holdback\n *   which is a sample of the visitor that isn't exposed so that Optimizely can calculate the impact of a campaign.\n */\nvar sendCampaignData = function(\n  campaignName,\n  campaignId,\n  audienceNames,\n  audienceIds,\n  experimentName,\n  experimentId,\n  variationName,\n  variationId,\n  inHoldback\n) {\n  var dimension = optimizely.get('data') && optimizely.get('data').campaigns[campaignId] && optimizely.get('data').campaigns[campaignId].integrationSettings && optimizely.get('data').campaigns[campaignId].integrationSettings.google_universal_analytics && optimizely.get('data').campaigns[campaignId].integrationSettings.google_universal_analytics.universal_analytics_slot;\n  \n  \n  if (dimension) {\n    var campaign = campaignName ? campaignName + '(' + campaignId + ')' : campaignId;\n    var audience = audienceNames.join(',');\n    var experiment = experimentName ? experimentName + '(' + experimentId + ')' : audience + '(' + experimentId + ')' ;\n    var variation = variationName ? variationName + '(' + variationId + ')' : variationId;\n    var holdback = inHoldback ? 'holdback' : 'treatment';\n\n    var customVariableValue = [campaign, experiment, variation, holdback].join(':');\n    var dataLayerObject = window[DATALAYER_OBJECT_NAME] || [];\n    dataLayerObject.push({\n      'event': 'campaign-decided', \n      'optimizely-dimension-value': customVariableValue,\n      'optimizely-dimension-number': dimension\n    }); \n  }\n};\n\n/**\n * This function fetches all the campaign data from the new Optimizely client\n * and calls the functions provided in the arguments with the data that needs to\n * be used for sending information. It is recommended to leave this function as is\n * and to create your own implementation of the functions referrerOverride and \n * sendCampaignData.\n *\n * @param {Function} referrerOverride - This function is called if the effective referrer value differs from\n *   the current document.referrer value. The only argument provided is the effective referrer value. \n * @param {Function} sendCampaignData - This function is called for every running campaign on the page. \n *   The function is called with all the relevant ids and names. \n */\nvar initNewOptimizelyIntegration = function(referrerOverride, sendCampaignData) {\n  // There can only be one effective referrer on a page. This boolean makes sure the \n  // redirect overwrite only happens once. Multiple referrerOverwrites might result in undesired behavior. \n  var referrerOverwritten = false;\n  var newActiveCampaign = function(id) {\n    var state = window['optimizely'].get && window['optimizely'].get('state');\n    var referrer = state.getRedirectInfo() && state.getRedirectInfo().referrer;\n    if (!referrerOverwritten && referrer) {\n      referrerOverride(referrer);\n      referrerOverwritten = true;\n    }\n\n    var activeCampaigns = state.getCampaignStates({\n      isActive: true\n    });\n    var campaignState = activeCampaigns[id];\n\n    var campaignName = campaignState.campaignName;\n    var campaignId = id;\n    var audienceNames, audienceIds;\n    if (campaignState.audiences.length > 0) {\n      audienceNames = campaignState.audiences.map(function(audience) {\n        return audience.name\n      });\n      audienceIds = campaignState.audiences.map(function(audience) {\n        return audience.id\n      });\n    } else {\n      audienceNames = ['everyone_else'];\n      audienceIds = [0];\n    }\n    var experimentName = campaignState.experiment.name;\n    var experimentId = campaignState.experiment.id;\n    var variationName = campaignState.variation.name;\n    var variationId = campaignState.variation.id;\n    sendCampaignData(\n      campaignName, \n      campaignId, \n      audienceNames, \n      audienceIds,\n      experimentName,\n      experimentId,\n      variationName, \n      variationId, \n      campaignState.isInCampaignHoldback\n    );\n  };\n\n  /**\n   * At any moment, a new campaign can be activated (manual or conditional activation). \n   * This function registers a listener that listens to newly activated campaigns and \n   * handles them. \n   */\n  var registerFutureActiveCampaigns = function() {\n    window.optimizely = window.optimizely || [];\n    window.optimizely.push({\n      type: 'addListener',\n      filter: {\n        type: 'lifecycle',\n        name: 'campaignDecided'\n      },\n      handler: function(event) {\n        var id = event.data.campaign.id;\n        newActiveCampaign(id);\n      }\n    });\n  };\n  \n  /**\n   * If this code is running after Optimizely on the page, there might already be\n   * some campaigns active. This function makes sure all those campaigns are \n   * handled. \n   */\n  var registerCurrentlyActiveCampaigns = function(){\n    var state = window['optimizely'].get && window['optimizely'].get('state');\n    if (state) {\n      var activeCampaigns = state.getCampaignStates({\n        isActive: true\n      });\n      for (var id in activeCampaigns) {\n        newActiveCampaign(id);\n      }\n    }\n  };\n  \n  registerCurrentlyActiveCampaigns();\n  registerFutureActiveCampaigns();\n};\n\n/**\n * A wrapper around the logic for both the classic and new Optimizely integration. \n * @param {Function} referrerOverride - This function is called if the effective referrer value differs from\n *   the current document.referrer value. The only argument provided is the effective referrer value. \n * @param {Function} sendExperimentData - This function is called for every running experiment on the page. \n *   The function is called with all the relevant ids and names. Used for classic Optimizely. \n * @param {Function} sendCampaignData - This function is called for every running campaign on the page. \n *   The function is called with all the relevant ids and names. Used for new Optimizely. \n */\nvar initOptimizelyIntegration = function(referrerOverride, sendCampaignData) {\n  initNewOptimizelyIntegration(referrerOverride, sendCampaignData);\n}\n\ninitOptimizelyIntegration(referrerOverride, sendCampaignData);\n\n</script>"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "supportDocumentWrite",
+                        "value": "false"
+                    }
+                ],
+                "fingerprint": "1533839571075",
+                "firingTriggerId": [
+                    "2147479553"
+                ],
+                "tagFiringOption": "ONCE_PER_EVENT"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "tagId": "111",
+                "name": "Optimizely Referrer override",
+                "type": "ua",
+                "parameter": [
+                    {
+                        "type": "BOOLEAN",
+                        "key": "nonInteraction",
+                        "value": "true"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "overrideGaSettings",
+                        "value": "true"
+                    },
+                    {
+                        "type": "LIST",
+                        "key": "fieldsToSet",
+                        "list": [
+                            {
+                                "type": "MAP",
+                                "map": [
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "fieldName",
+                                        "value": "referrer"
+                                    },
+                                    {
+                                        "type": "TEMPLATE",
+                                        "key": "value",
+                                        "value": "{{optimizely-referrer}}"
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventCategory",
+                        "value": "Optimizely"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "trackType",
+                        "value": "TRACK_EVENT"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "gaSettings",
+                        "value": "{{Google Analytics Settings}}"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "eventAction",
+                        "value": "Redirect Referrer Override"
+                    }
+                ],
+                "fingerprint": "1533840234431",
+                "firingTriggerId": [
+                    "98"
+                ],
+                "tagFiringOption": "ONCE_PER_EVENT"
+            }
+        ],
+        "trigger": [
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "triggerId": "97",
+                "name": "Optimizely campaign decided",
+                "type": "CUSTOM_EVENT",
+                "customEventFilter": [
+                    {
+                        "type": "EQUALS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{_event}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "campaign-decided"
+                            }
+                        ]
+                    }
+                ],
+                "fingerprint": "1533839487699"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "triggerId": "98",
+                "name": "Optimizely referrer override",
+                "type": "CUSTOM_EVENT",
+                "customEventFilter": [
+                    {
+                        "type": "EQUALS",
+                        "parameter": [
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg0",
+                                "value": "{{_event}}"
+                            },
+                            {
+                                "type": "TEMPLATE",
+                                "key": "arg1",
+                                "value": "optimizely-referrer-override"
+                            }
+                        ]
+                    }
+                ],
+                "fingerprint": "1533839519330"
+            }
+        ],
+        "variable": [
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "variableId": "155",
+                "name": "optimizely-dimension-number",
+                "type": "v",
+                "parameter": [
+                    {
+                        "type": "INTEGER",
+                        "key": "dataLayerVersion",
+                        "value": "2"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "setDefaultValue",
+                        "value": "false"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "name",
+                        "value": "optimizely-dimension-number"
+                    }
+                ],
+                "fingerprint": "1533839404852"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "variableId": "156",
+                "name": "optimizely-dimension-value",
+                "type": "v",
+                "parameter": [
+                    {
+                        "type": "INTEGER",
+                        "key": "dataLayerVersion",
+                        "value": "2"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "setDefaultValue",
+                        "value": "false"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "name",
+                        "value": "optimizely-dimension-value"
+                    }
+                ],
+                "fingerprint": "1533839425510"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "variableId": "157",
+                "name": "optimizely-referrer",
+                "type": "v",
+                "parameter": [
+                    {
+                        "type": "INTEGER",
+                        "key": "dataLayerVersion",
+                        "value": "2"
+                    },
+                    {
+                        "type": "BOOLEAN",
+                        "key": "setDefaultValue",
+                        "value": "false"
+                    },
+                    {
+                        "type": "TEMPLATE",
+                        "key": "name",
+                        "value": "optimizely-referrer"
+                    }
+                ],
+                "fingerprint": "1533839456920"
+            }
+        ],
+        "builtInVariable": [
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "type": "PAGE_URL",
+                "name": "Page URL"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "type": "PAGE_HOSTNAME",
+                "name": "Page Hostname"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "type": "PAGE_PATH",
+                "name": "Page Path"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "type": "REFERRER",
+                "name": "Referrer"
+            },
+            {
+                "accountId": "302932",
+                "containerId": "2043556",
+                "type": "EVENT",
+                "name": "Event"
+            }
+        ],
+        "fingerprint": "1533840537500",
+        "tagManagerUrl": "https://tagmanager.google.com/#/versions/accounts/302932/containers/2043556/versions/30?apiLink=version"
+    }
+}
